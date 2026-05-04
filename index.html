@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#7c3aed">
+  <title>교랑톡</title>
+  <meta property="og:title" content="교랑톡">
+  <meta property="og:description" content="가까운 사람과 더 가깝게, 교랑톡">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://open.kyorang.com">
+  <link rel="icon" type="image/png" href="/icon.png">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      min-height: 100vh;
+      background: #060610;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+      overflow-x: hidden;
+    }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(124, 58, 237, 0.25) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(167, 139, 250, 0.18) 0%, transparent 50%),
+        #060610;
+    }
+    .card {
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+    }
+    .logo {
+      width: 88px;
+      height: 88px;
+      margin: 0 auto 28px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      font-weight: 900;
+      color: white;
+      box-shadow: 0 10px 30px rgba(124, 58, 237, 0.4);
+      letter-spacing: -2px;
+    }
+    h1 {
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+    .tagline {
+      font-size: 16px;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.6;
+      margin-bottom: 36px;
+    }
+    .features {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 36px;
+    }
+    .feature {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 16px 12px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.85);
+      font-weight: 600;
+    }
+    .feature .emoji {
+      font-size: 22px;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .footer {
+      font-size: 12px;
+      color: rgba(255,255,255,0.4);
+      margin-top: 32px;
+    }
+    .footer a {
+      color: rgba(255,255,255,0.55);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">교</div>
+    <h1>교랑톡</h1>
+    <p class="tagline">가까운 사람과<br>더 가깝게</p>
+
+    <div class="features">
+      <div class="feature"><span class="emoji">💬</span>1:1 대화</div>
+      <div class="feature"><span class="emoji">👥</span>그룹채팅</div>
+      <div class="feature"><span class="emoji">🌐</span>오픈채팅</div>
+      <div class="feature"><span class="emoji">🔒</span>비밀번호 보호</div>
+    </div>
+
+    <p class="footer">
+      © KYORANG · <a href="https://kyorang.com">kyorang.com</a>
+    </p>
+  </div>
+</body>
+</html>

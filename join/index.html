@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#7c3aed">
+  <title>채팅방 초대 · 교랑톡</title>
+  <meta property="og:title" content="교랑톡 채팅방 초대">
+  <meta property="og:description" content="교랑톡 앱에서 초대받은 채팅방으로 입장하세요">
+  <meta property="og:type" content="website">
+  <link rel="icon" type="image/png" href="/icon.png">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      min-height: 100vh;
+      background: #060610;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+      overflow-x: hidden;
+    }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(124, 58, 237, 0.25) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(167, 139, 250, 0.18) 0%, transparent 50%),
+        #060610;
+    }
+    .card {
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+    }
+    .logo {
+      width: 76px;
+      height: 76px;
+      margin: 0 auto 24px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: 900;
+      color: white;
+      box-shadow: 0 10px 30px rgba(124, 58, 237, 0.4);
+      letter-spacing: -2px;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      letter-spacing: -0.4px;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 28px;
+      line-height: 1.6;
+    }
+    .code-box {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 28px;
+    }
+    .code-label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .code-value {
+      font-size: 24px;
+      font-weight: 900;
+      color: #a78bfa;
+      letter-spacing: 4px;
+      font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      border-radius: 14px;
+      border: none;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity 0.2s, transform 0.1s;
+      letter-spacing: -0.2px;
+    }
+    .btn:active {
+      transform: scale(0.98);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      color: white;
+      box-shadow: 0 6px 20px rgba(124, 58, 237, 0.3);
+      margin-bottom: 10px;
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.9);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+    .status {
+      margin-top: 20px;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      background: rgba(255,255,255,0.04);
+      display: none;
+    }
+    .status.show { display: block; }
+    .footer {
+      font-size: 11px;
+      color: rgba(255,255,255,0.35);
+      margin-top: 32px;
+    }
+    .footer a {
+      color: rgba(255,255,255,0.5);
+      text-decoration: none;
+    }
+    .invalid {
+      padding: 20px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 14px;
+      color: #fca5a5;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">교</div>
+    <h1>채팅방 초대</h1>
+    <p class="subtitle">교랑톡으로 초대받은 채팅방이에요</p>
+
+    <div id="content">
+      <div class="code-box">
+        <div class="code-label">초대코드</div>
+        <div class="code-value" id="code">-</div>
+      </div>
+
+      <a class="btn btn-primary" id="open-app" href="#">
+        앱에서 열기
+      </a>
+
+      <a class="btn btn-secondary" id="install-app"
+         href="https://play.google.com/store/apps/details?id=com.kyorang.kyorang_talk"
+         target="_blank" rel="noopener">
+        교랑톡 설치하기
+      </a>
+
+      <div class="status" id="status"></div>
+    </div>
+
+    <p class="footer">
+      © KYORANG · <a href="https://kyorang.com">kyorang.com</a>
+    </p>
+  </div>
+
+  <script>
+    (function() {
+      // URL에서 코드 추출
+      // /join/CODE 또는 ?code=CODE 둘 다 지원
+      var path = window.location.pathname;
+      var match = path.match(/\/join\/([^\/?#]+)/);
+      var code = match ? decodeURIComponent(match[1]) : null;
+
+      if (!code) {
+        var params = new URLSearchParams(window.location.search);
+        code = params.get('code');
+      }
+
+      var content = document.getElementById('content');
+      var codeEl = document.getElementById('code');
+      var openBtn = document.getElementById('open-app');
+      var installBtn = document.getElementById('install-app');
+      var statusEl = document.getElementById('status');
+
+      if (!code || !/^[a-zA-Z0-9_-]{4,32}$/.test(code)) {
+        content.innerHTML =
+          '<div class="invalid">유효하지 않은 초대 링크예요</div>' +
+          '<a class="btn btn-secondary" href="/">메인으로</a>';
+        return;
+      }
+
+      codeEl.textContent = code;
+
+      // 패키지/스킴 정보
+      var packageName = 'com.kyorang.kyorang_talk';
+      var customScheme = 'kyorangtalk://join/' + encodeURIComponent(code);
+      var ua = navigator.userAgent || '';
+      var isAndroid = /android/i.test(ua);
+      var isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+      // 자동으로 앱 열기 시도 (Android만)
+      function tryOpenApp(showStatus) {
+        if (isAndroid) {
+          // intent:// URL 사용 - 앱 없으면 자동으로 Play Store로
+          var intentUrl = 'intent://join/' + encodeURIComponent(code) +
+            '#Intent;scheme=kyorangtalk;package=' + packageName +
+            ';S.browser_fallback_url=' +
+            encodeURIComponent('https://play.google.com/store/apps/details?id=' + packageName) +
+            ';end';
+          window.location.href = intentUrl;
+        } else if (isIOS) {
+          // iOS는 우선 custom scheme 시도. 안 깔려있으면 스토어.
+          var t = Date.now();
+          window.location.href = customScheme;
+          setTimeout(function() {
+            if (Date.now() - t < 2000) {
+              // 앱 안 떴으면 (백그라운드 안 갔으면)
+              if (showStatus) {
+                statusEl.textContent = '앱이 설치되어 있지 않은 것 같아요. 아래 "설치하기"를 눌러주세요.';
+                statusEl.classList.add('show');
+              }
+            }
+          }, 1500);
+        } else {
+          // 데스크탑 등
+          statusEl.textContent = '모바일 기기에서 링크를 열어주세요.';
+          statusEl.classList.add('show');
+        }
+      }
+
+      // "앱에서 열기" 버튼
+      openBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        tryOpenApp(true);
+      });
+
+      // 페이지 진입 시 자동 시도 (모바일만)
+      if (isAndroid || isIOS) {
+        // 자동 진입 너무 공격적이지 않게 살짝 딜레이
+        setTimeout(function() {
+          tryOpenApp(false);
+        }, 300);
+      }
+    })();
+  </script>
+</body>
+</html>

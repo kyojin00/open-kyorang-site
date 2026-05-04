@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.kyorang.kyorang_talk",
+      "sha256_cert_fingerprints": [
+        "D7:B8:EA:28:EC:4F:7A:30:42:99:B7:16:B2:0F:23:D3:95:7D:88:37:BB:22:08:8F:07:2B:11:80:C7:84:A2:D0"
+      ]
+    }
+  }
+]
