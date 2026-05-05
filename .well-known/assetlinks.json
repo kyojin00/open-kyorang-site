@@ -5,7 +5,8 @@
       "namespace": "android_app",
       "package_name": "com.kyorang.kyorang_talk",
       "sha256_cert_fingerprints": [
-        "D7:B8:EA:28:EC:4F:7A:30:42:99:B7:16:B2:0F:23:D3:95:7D:88:37:BB:22:08:8F:07:2B:11:80:C7:84:A2:D0"
+        "D7:B8:EA:28:EC:4F:7A:30:42:99:B7:16:B2:0F:23:D3:95:7D:88:37:BB:22:08:8F:07:2B:11:80:C7:84:A2:D0",
+        "54:86:40:3D:1F:DC:C7:77:A0:C0:2A:2E:E9:BA:55:CA:6D:87:AF:0E:35:9F:AD:B0:12:2A:BA:2E:23:C9:75:10"
       ]
     }
   }
