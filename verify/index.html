@@ -22,9 +22,6 @@
     .state.active { display: block; animation: fadeIn 0.4s ease-out; }
     .icon-wrap { width: 96px; height: 96px; margin: 0 auto 28px; position: relative; }
     .icon-circle { width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; box-shadow: 0 12px 32px rgba(124, 58, 237, 0.4); }
-    .state-initial .icon-circle { background: linear-gradient(135deg, #2d1b69, #1a0f3d); border: 1px solid rgba(124, 58, 237, 0.3); box-shadow: 0 12px 32px rgba(124, 58, 237, 0.2); }
-    .state-initial .icon-wrap::before { content: ''; position: absolute; inset: -8px; border-radius: 50%; background: radial-gradient(circle, rgba(124,58,237,0.25), transparent 70%); animation: pulse 2.5s ease-in-out infinite; }
-    .lock-svg { width: 40px; height: 40px; stroke: #c4b5fd; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
     .state-success .icon-circle { background: linear-gradient(135deg, #7c3aed, #5b21b6); }
     .state-success .icon-wrap::before { content: ''; position: absolute; inset: -8px; border-radius: 50%; background: radial-gradient(circle, rgba(124,58,237,0.4), transparent 70%); animation: pulse 2s ease-in-out infinite; }
     .check-svg { width: 44px; height: 44px; stroke: #fff; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; fill: none; }
@@ -68,26 +65,14 @@
       <div class="card-bar"></div>
       <div class="card-body">
 
-        <div class="state state-initial active" id="state-initial">
-          <div class="icon-wrap">
-            <div class="icon-circle">
-              <svg class="lock-svg" viewBox="0 0 24 24">
-                <rect x="5" y="11" width="14" height="9" rx="2" />
-                <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-              </svg>
-            </div>
-          </div>
-          <h1 class="title">이메일 인증</h1>
-          <p class="desc">아래 버튼을 눌러<br />이메일 인증을 완료해주세요.</p>
-          <button class="btn" id="btn-verify">인증하기</button>
-        </div>
-
-        <div class="state" id="state-loading">
+        <!-- 1. 검증 중 (페이지 로드 시 기본 표시) -->
+        <div class="state active" id="state-loading">
           <div class="spinner"></div>
           <h1 class="title">인증 중...</h1>
           <p class="desc">잠시만 기다려주세요.</p>
         </div>
 
+        <!-- 2. 성공 -->
         <div class="state state-success" id="state-success">
           <div class="icon-wrap">
             <div class="icon-circle">
@@ -97,13 +82,14 @@
             </div>
           </div>
           <h1 class="title">인증되었습니다</h1>
-          <p class="desc">이메일 인증이 완료되었어요.<br />교랑톡에서 계속 이어가세요.</p>
+          <p class="desc" id="success-desc">이메일 인증이 완료되었어요.<br />교랑톡에서 계속 이어가세요.</p>
           <a class="btn" id="btn-open-app" href="https://open.kyorang.com/verified">교랑톡 열기</a>
           <div>
             <a href="https://talk.kyorang.com" class="btn-secondary">웹으로 이동</a>
           </div>
         </div>
 
+        <!-- 3. 실패 -->
         <div class="state state-error" id="state-error">
           <div class="icon-wrap">
             <div class="icon-circle">
@@ -140,6 +126,9 @@
       CONFIG.SUPABASE_ANON_KEY
     );
 
+    // 모바일 감지
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
     let verifiedSession = null;
 
     function showState(name) {
@@ -161,7 +150,6 @@
     }
 
     async function verifyEmail() {
-      showState('loading');
       const tokens = parseTokens();
 
       if (tokens.error) {
@@ -190,16 +178,28 @@
         verifiedSession = result.data.session;
         window.history.replaceState({}, document.title, window.location.pathname);
 
+        // 앱 열기 버튼 URL 세팅
+        let appUrl = CONFIG.APP_LINK;
         if (verifiedSession) {
           const params = new URLSearchParams({
             access_token: verifiedSession.access_token,
             refresh_token: verifiedSession.refresh_token,
           });
-          document.getElementById('btn-open-app').href =
-            `${CONFIG.APP_LINK}?${params.toString()}`;
+          appUrl = `${CONFIG.APP_LINK}?${params.toString()}`;
+          document.getElementById('btn-open-app').href = appUrl;
         }
 
         showState('success');
+
+        // 모바일이면 자동으로 앱 열기 (1.5초 후)
+        if (isMobile) {
+          document.getElementById('success-desc').innerHTML =
+            '이메일 인증이 완료되었어요.<br />교랑톡으로 이동 중...';
+
+          setTimeout(() => {
+            window.location.href = appUrl;
+          }, 1500);
+        }
       } catch (e) {
         showError(e.message || '알 수 없는 오류');
       }
@@ -214,7 +214,10 @@
       }
     }
 
-    document.getElementById('btn-verify').addEventListener('click', verifyEmail);
+    // 페이지 로드 시 자동 인증
+    window.addEventListener('DOMContentLoaded', verifyEmail);
+
+    // 재시도 버튼
     document.getElementById('btn-retry').addEventListener('click', verifyEmail);
   </script>
 
