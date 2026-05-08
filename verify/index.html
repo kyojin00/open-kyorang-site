@@ -65,14 +65,12 @@
       <div class="card-bar"></div>
       <div class="card-body">
 
-        <!-- 1. 검증 중 -->
         <div class="state active" id="state-loading">
           <div class="spinner"></div>
           <h1 class="title">인증 중...</h1>
           <p class="desc">잠시만 기다려주세요.</p>
         </div>
 
-        <!-- 2. 성공 -->
         <div class="state state-success" id="state-success">
           <div class="icon-wrap">
             <div class="icon-circle">
@@ -89,7 +87,6 @@
           </div>
         </div>
 
-        <!-- 3. 실패 -->
         <div class="state state-error" id="state-error">
           <div class="icon-wrap">
             <div class="icon-circle">
@@ -121,13 +118,11 @@
     };
     // ================
 
-    // ⭐ 변수명 'supabase' 충돌 방지 — CDN이 window.supabase를 전역으로 선언함
     const sb = window.supabase.createClient(
       CONFIG.SUPABASE_URL,
       CONFIG.SUPABASE_ANON_KEY
     );
 
-    // 모바일 감지
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
     let verifiedSession = null;
@@ -141,10 +136,18 @@
       const hash = new URLSearchParams(window.location.hash.slice(1));
       const query = new URLSearchParams(window.location.search);
       return {
+        // 이메일 OTP 플로우 (권장)
         token_hash: query.get('token_hash') || hash.get('token_hash'),
         type: query.get('type') || hash.get('type') || 'email',
+
+        // PKCE 플로우 (OAuth 등)
+        code: query.get('code'),
+
+        // 구버전 implicit 플로우
         access_token: hash.get('access_token'),
         refresh_token: hash.get('refresh_token'),
+
+        // 에러
         error: query.get('error') || hash.get('error'),
         error_code: query.get('error_code') || hash.get('error_code'),
         error_description: query.get('error_description') || hash.get('error_description'),
@@ -154,6 +157,10 @@
     async function verifyEmail() {
       const tokens = parseTokens();
 
+      // 디버그 로그 — 어떤 토큰이 들어왔는지 확인용
+      console.log('[Verify] URL:', window.location.href);
+      console.log('[Verify] tokens:', tokens);
+
       if (tokens.error) {
         return showError(tokens.error_code, tokens.error_description);
       }
@@ -162,24 +169,36 @@
         let result;
 
         if (tokens.token_hash) {
+          // 이메일 OTP 검증
+          console.log('[Verify] using verifyOtp with token_hash');
           result = await sb.auth.verifyOtp({
             token_hash: tokens.token_hash,
             type: tokens.type,
           });
+        } else if (tokens.code) {
+          // PKCE 코드 교환
+          console.log('[Verify] using exchangeCodeForSession');
+          result = await sb.auth.exchangeCodeForSession(tokens.code);
         } else if (tokens.access_token && tokens.refresh_token) {
+          // 구 implicit
+          console.log('[Verify] using setSession with tokens');
           result = await sb.auth.setSession({
             access_token: tokens.access_token,
             refresh_token: tokens.refresh_token,
           });
         } else {
-          return showError(null, '인증 토큰이 없습니다.');
+          console.error('[Verify] 토큰 없음. URL:', window.location.href);
+          return showError(null, '이 페이지는 이메일 링크를 통해서만 접근해주세요.');
         }
 
         if (result.error) {
+          console.error('[Verify] Supabase 에러:', result.error);
           return showError(null, result.error.message);
         }
 
         verifiedSession = result.data.session;
+        console.log('[Verify] 성공! session 받음');
+
         window.history.replaceState({}, document.title, window.location.pathname);
 
         let appUrl = CONFIG.APP_LINK;
@@ -194,7 +213,6 @@
 
         showState('success');
 
-        // 모바일이면 1.5초 후 자동으로 앱 열기
         if (isMobile) {
           document.getElementById('success-desc').innerHTML =
             '이메일 인증이 완료되었어요.<br />교랑톡으로 이동 중...';
@@ -204,6 +222,7 @@
           }, 1500);
         }
       } catch (e) {
+        console.error('[Verify] 예외:', e);
         showError(null, e.message || '알 수 없는 오류');
       }
     }
@@ -211,7 +230,6 @@
     function showError(code, msg) {
       showState('error');
 
-      // 만료/무효 링크용 친절한 메시지
       if (code === 'otp_expired' || (msg && (msg.includes('expired') || msg.includes('invalid')))) {
         document.getElementById('error-title').textContent = '링크가 만료되었어요';
         document.getElementById('error-desc').innerHTML =
@@ -225,7 +243,6 @@
       }
     }
 
-    // 페이지 로드 시 자동 인증
     window.addEventListener('DOMContentLoaded', verifyEmail);
   </script>
 
