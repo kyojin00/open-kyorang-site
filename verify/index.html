@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>이메일 인증 · 교랑</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { min-height: 100%; background: #060610; font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; color: #c4b5fd; }
+    body { display: flex; align-items: center; justify-content: center; padding: 24px 16px; position: relative; }
+    body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(circle at 20% 30%, rgba(124,58,237,0.15), transparent 50%), radial-gradient(circle at 80% 70%, rgba(236,72,153,0.08), transparent 50%); pointer-events: none; }
+    .container { width: 100%; max-width: 480px; position: relative; z-index: 1; }
+    .logo { text-align: center; margin-bottom: 32px; animation: fadeInDown 0.6s ease-out; }
+    .logo-box { display: inline-block; background: linear-gradient(135deg, #2d1b69, #1a0f3d); border-radius: 20px; padding: 18px 28px; border: 1px solid rgba(124, 58, 237, 0.3); }
+    .logo-name { font-size: 22px; font-weight: 900; color: #c4b5fd; letter-spacing: -0.5px; margin-bottom: 2px; }
+    .logo-tag { font-size: 11px; color: #3d3660; letter-spacing: 0.05em; }
+    .card { background: #0c0c1e; border-radius: 24px; border: 1px solid #1a1830; overflow: hidden; animation: fadeInUp 0.7s ease-out 0.2s backwards; }
+    .card-bar { height: 4px; background: linear-gradient(90deg, #7c3aed, #a78bfa, #ec4899, #a78bfa, #7c3aed); background-size: 200% 100%; animation: shimmer 3s linear infinite; }
+    .card-body { padding: 48px 36px 40px; text-align: center; min-height: 380px; display: flex; flex-direction: column; justify-content: center; }
+    .state { display: none; }
+    .state.active { display: block; animation: fadeIn 0.4s ease-out; }
+    .icon-wrap { width: 96px; height: 96px; margin: 0 auto 28px; position: relative; }
+    .icon-circle { width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; box-shadow: 0 12px 32px rgba(124, 58, 237, 0.4); }
+    .state-initial .icon-circle { background: linear-gradient(135deg, #2d1b69, #1a0f3d); border: 1px solid rgba(124, 58, 237, 0.3); box-shadow: 0 12px 32px rgba(124, 58, 237, 0.2); }
+    .state-initial .icon-wrap::before { content: ''; position: absolute; inset: -8px; border-radius: 50%; background: radial-gradient(circle, rgba(124,58,237,0.25), transparent 70%); animation: pulse 2.5s ease-in-out infinite; }
+    .lock-svg { width: 40px; height: 40px; stroke: #c4b5fd; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+    .state-success .icon-circle { background: linear-gradient(135deg, #7c3aed, #5b21b6); }
+    .state-success .icon-wrap::before { content: ''; position: absolute; inset: -8px; border-radius: 50%; background: radial-gradient(circle, rgba(124,58,237,0.4), transparent 70%); animation: pulse 2s ease-in-out infinite; }
+    .check-svg { width: 44px; height: 44px; stroke: #fff; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+    .check-svg path { stroke-dasharray: 50; stroke-dashoffset: 50; }
+    .state-success.active .check-svg path { animation: drawCheck 0.5s ease-out 0.3s forwards; }
+    .state-success.active .icon-wrap { animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .state-error .icon-circle { background: linear-gradient(135deg, #b91c1c, #7f1d1d); box-shadow: 0 12px 32px rgba(185, 28, 28, 0.3); }
+    .x-svg { width: 40px; height: 40px; stroke: #fff; stroke-width: 4; stroke-linecap: round; fill: none; }
+    .spinner { width: 56px; height: 56px; margin: 0 auto 28px; border: 4px solid rgba(124, 58, 237, 0.15); border-top-color: #a78bfa; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    .title { font-size: 26px; font-weight: 900; color: #c4b5fd; letter-spacing: -0.5px; margin-bottom: 12px; }
+    .desc { font-size: 14px; color: #6b6485; line-height: 1.8; margin-bottom: 32px; }
+    .btn { display: inline-block; background: linear-gradient(135deg, #7c3aed, #5b21b6); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700; padding: 16px 52px; border-radius: 14px; letter-spacing: -0.2px; box-shadow: 0 8px 24px rgba(124, 58, 237, 0.35); transition: transform 0.2s, box-shadow 0.2s; border: none; cursor: pointer; font-family: inherit; }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(124, 58, 237, 0.5); }
+    .btn:active { transform: translateY(0); }
+    .btn-secondary { display: inline-block; background: transparent; color: #7c6fa0; text-decoration: none; font-size: 13px; font-weight: 600; padding: 12px 24px; margin-top: 12px; border-radius: 10px; transition: color 0.2s, background 0.2s; }
+    .btn-secondary:hover { color: #c4b5fd; background: rgba(124, 58, 237, 0.08); }
+    .footer { text-align: center; margin-top: 28px; font-size: 11px; color: #2d2b50; }
+    .err-detail { font-size: 12px; color: #6b6485; margin-top: 16px; padding: 12px 16px; background: rgba(185, 28, 28, 0.08); border: 1px solid rgba(185, 28, 28, 0.2); border-radius: 10px; text-align: left; word-break: break-all; }
+    @keyframes fadeInDown { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes popIn { 0% { transform: scale(0); } 60% { transform: scale(1.1); } 100% { transform: scale(1); } }
+    @keyframes drawCheck { to { stroke-dashoffset: 0; } }
+    @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.15); opacity: 0.3; } }
+    @keyframes shimmer { 0% { background-position: 0% 0%; } 100% { background-position: 200% 0%; } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <div class="logo">
+      <div class="logo-box">
+        <div class="logo-name">KYORANG</div>
+        <div class="logo-tag">말하지 못한 마음을 꺼낼 수 있는 곳</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-bar"></div>
+      <div class="card-body">
+
+        <div class="state state-initial active" id="state-initial">
+          <div class="icon-wrap">
+            <div class="icon-circle">
+              <svg class="lock-svg" viewBox="0 0 24 24">
+                <rect x="5" y="11" width="14" height="9" rx="2" />
+                <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+              </svg>
+            </div>
+          </div>
+          <h1 class="title">이메일 인증</h1>
+          <p class="desc">아래 버튼을 눌러<br />이메일 인증을 완료해주세요.</p>
+          <button class="btn" id="btn-verify">인증하기</button>
+        </div>
+
+        <div class="state" id="state-loading">
+          <div class="spinner"></div>
+          <h1 class="title">인증 중...</h1>
+          <p class="desc">잠시만 기다려주세요.</p>
+        </div>
+
+        <div class="state state-success" id="state-success">
+          <div class="icon-wrap">
+            <div class="icon-circle">
+              <svg class="check-svg" viewBox="0 0 24 24">
+                <path d="M5 12.5l4.5 4.5L19 7.5" />
+              </svg>
+            </div>
+          </div>
+          <h1 class="title">인증되었습니다</h1>
+          <p class="desc">이메일 인증이 완료되었어요.<br />교랑톡에서 계속 이어가세요.</p>
+          <a class="btn" id="btn-open-app" href="https://open.kyorang.com/verified">교랑톡 열기</a>
+          <div>
+            <a href="https://talk.kyorang.com" class="btn-secondary">웹으로 이동</a>
+          </div>
+        </div>
+
+        <div class="state state-error" id="state-error">
+          <div class="icon-wrap">
+            <div class="icon-circle">
+              <svg class="x-svg" viewBox="0 0 24 24">
+                <line x1="7" y1="7" x2="17" y2="17" />
+                <line x1="17" y1="7" x2="7" y2="17" />
+              </svg>
+            </div>
+          </div>
+          <h1 class="title">인증 실패</h1>
+          <p class="desc">링크가 만료되었거나<br />이미 사용된 링크일 수 있어요.</p>
+          <button class="btn" id="btn-retry">다시 시도</button>
+          <div class="err-detail" id="err-detail" style="display:none;"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <p class="footer">© 2025 KYORANG · All rights reserved.</p>
+
+  </div>
+
+  <script>
+    // ===== 설정 =====
+    const CONFIG = {
+      SUPABASE_URL: 'https://taohtzdmqsvhbxfqfvmq.supabase.co',
+      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhb2h0emRtcXN2aGJ4ZnFmdm1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0NjM5NTYsImV4cCI6MjA4OTAzOTk1Nn0.831N3LZ6aKdGpJfguuHXWHzm6lCQ4_5PvdxDlXvM7BA',  // ← anon key 채우기
+      APP_LINK: 'https://open.kyorang.com/verified',
+    };
+    // ================
+
+    const supabase = window.supabase.createClient(
+      CONFIG.SUPABASE_URL,
+      CONFIG.SUPABASE_ANON_KEY
+    );
+
+    let verifiedSession = null;
+
+    function showState(name) {
+      document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+      document.getElementById('state-' + name).classList.add('active');
+    }
+
+    function parseTokens() {
+      const hash = new URLSearchParams(window.location.hash.slice(1));
+      const query = new URLSearchParams(window.location.search);
+      return {
+        token_hash: query.get('token_hash') || hash.get('token_hash'),
+        type: query.get('type') || hash.get('type') || 'email',
+        access_token: hash.get('access_token'),
+        refresh_token: hash.get('refresh_token'),
+        error: query.get('error') || hash.get('error'),
+        error_description: query.get('error_description') || hash.get('error_description'),
+      };
+    }
+
+    async function verifyEmail() {
+      showState('loading');
+      const tokens = parseTokens();
+
+      if (tokens.error) {
+        return showError(tokens.error_description || tokens.error);
+      }
+
+      try {
+        let result;
+
+        if (tokens.token_hash) {
+          result = await supabase.auth.verifyOtp({
+            token_hash: tokens.token_hash,
+            type: tokens.type,
+          });
+        } else if (tokens.access_token && tokens.refresh_token) {
+          result = await supabase.auth.setSession({
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token,
+          });
+        } else {
+          return showError('인증 토큰이 없습니다.');
+        }
+
+        if (result.error) return showError(result.error.message);
+
+        verifiedSession = result.data.session;
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        if (verifiedSession) {
+          const params = new URLSearchParams({
+            access_token: verifiedSession.access_token,
+            refresh_token: verifiedSession.refresh_token,
+          });
+          document.getElementById('btn-open-app').href =
+            `${CONFIG.APP_LINK}?${params.toString()}`;
+        }
+
+        showState('success');
+      } catch (e) {
+        showError(e.message || '알 수 없는 오류');
+      }
+    }
+
+    function showError(msg) {
+      showState('error');
+      const detail = document.getElementById('err-detail');
+      if (msg) {
+        detail.textContent = msg;
+        detail.style.display = 'block';
+      }
+    }
+
+    document.getElementById('btn-verify').addEventListener('click', verifyEmail);
+    document.getElementById('btn-retry').addEventListener('click', verifyEmail);
+  </script>
+
+</body>
+</html>
