@@ -65,7 +65,7 @@
       <div class="card-bar"></div>
       <div class="card-body">
 
-        <!-- 1. 검증 중 (페이지 로드 시 기본 표시) -->
+        <!-- 1. 검증 중 -->
         <div class="state active" id="state-loading">
           <div class="spinner"></div>
           <h1 class="title">인증 중...</h1>
@@ -99,9 +99,9 @@
               </svg>
             </div>
           </div>
-          <h1 class="title">인증 실패</h1>
-          <p class="desc">링크가 만료되었거나<br />이미 사용된 링크일 수 있어요.</p>
-          <button class="btn" id="btn-retry">다시 시도</button>
+          <h1 class="title" id="error-title">인증 실패</h1>
+          <p class="desc" id="error-desc">링크가 만료되었거나<br />이미 사용된 링크일 수 있어요.</p>
+          <a class="btn" href="https://kyorang.com">교랑 메인으로</a>
           <div class="err-detail" id="err-detail" style="display:none;"></div>
         </div>
 
@@ -121,7 +121,8 @@
     };
     // ================
 
-    const supabase = window.supabase.createClient(
+    // ⭐ 변수명 'supabase' 충돌 방지 — CDN이 window.supabase를 전역으로 선언함
+    const sb = window.supabase.createClient(
       CONFIG.SUPABASE_URL,
       CONFIG.SUPABASE_ANON_KEY
     );
@@ -145,6 +146,7 @@
         access_token: hash.get('access_token'),
         refresh_token: hash.get('refresh_token'),
         error: query.get('error') || hash.get('error'),
+        error_code: query.get('error_code') || hash.get('error_code'),
         error_description: query.get('error_description') || hash.get('error_description'),
       };
     }
@@ -153,32 +155,33 @@
       const tokens = parseTokens();
 
       if (tokens.error) {
-        return showError(tokens.error_description || tokens.error);
+        return showError(tokens.error_code, tokens.error_description);
       }
 
       try {
         let result;
 
         if (tokens.token_hash) {
-          result = await supabase.auth.verifyOtp({
+          result = await sb.auth.verifyOtp({
             token_hash: tokens.token_hash,
             type: tokens.type,
           });
         } else if (tokens.access_token && tokens.refresh_token) {
-          result = await supabase.auth.setSession({
+          result = await sb.auth.setSession({
             access_token: tokens.access_token,
             refresh_token: tokens.refresh_token,
           });
         } else {
-          return showError('인증 토큰이 없습니다.');
+          return showError(null, '인증 토큰이 없습니다.');
         }
 
-        if (result.error) return showError(result.error.message);
+        if (result.error) {
+          return showError(null, result.error.message);
+        }
 
         verifiedSession = result.data.session;
         window.history.replaceState({}, document.title, window.location.pathname);
 
-        // 앱 열기 버튼 URL 세팅
         let appUrl = CONFIG.APP_LINK;
         if (verifiedSession) {
           const params = new URLSearchParams({
@@ -191,7 +194,7 @@
 
         showState('success');
 
-        // 모바일이면 자동으로 앱 열기 (1.5초 후)
+        // 모바일이면 1.5초 후 자동으로 앱 열기
         if (isMobile) {
           document.getElementById('success-desc').innerHTML =
             '이메일 인증이 완료되었어요.<br />교랑톡으로 이동 중...';
@@ -201,12 +204,20 @@
           }, 1500);
         }
       } catch (e) {
-        showError(e.message || '알 수 없는 오류');
+        showError(null, e.message || '알 수 없는 오류');
       }
     }
 
-    function showError(msg) {
+    function showError(code, msg) {
       showState('error');
+
+      // 만료/무효 링크용 친절한 메시지
+      if (code === 'otp_expired' || (msg && (msg.includes('expired') || msg.includes('invalid')))) {
+        document.getElementById('error-title').textContent = '링크가 만료되었어요';
+        document.getElementById('error-desc').innerHTML =
+          '인증 링크가 만료되었거나<br />이미 사용되었어요.<br /><br />다시 가입하거나 인증 메일을<br />새로 받아주세요.';
+      }
+
       const detail = document.getElementById('err-detail');
       if (msg) {
         detail.textContent = msg;
@@ -216,9 +227,6 @@
 
     // 페이지 로드 시 자동 인증
     window.addEventListener('DOMContentLoaded', verifyEmail);
-
-    // 재시도 버튼
-    document.getElementById('btn-retry').addEventListener('click', verifyEmail);
   </script>
 
 </body>
